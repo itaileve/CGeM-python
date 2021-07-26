@@ -925,6 +925,73 @@ def compute_pairwise_coulomb(
     #print(23.060549*value*14.4)
     return value
 
+def compute_pairwise_coulomb_ij(
+    coord1,
+    charge1,
+    alpha1,
+    coord2,
+    charge2,
+    alpha2,
+    deriv=False,
+    threshold=1.0e-8,
+    r_cut=None,
+):
+    """
+    Equation (3a) of [J. Phys. Chem. Lett. 2019, 10, 6820-6826]
+
+    Parameters
+    ----------
+    coord1: np.ndarray, shape=(n, 3)
+            Cartesian coordinates of positions in Angstrom.
+    charge1: np.ndarray, shape=(n,)
+            Charge value of core/shells.
+    alpha1: np.ndarray, shape=(n,)
+            alpha values of core/shells
+    coord2: np.ndarray, shape=(m, 3)
+    charge2: np.ndarray, shape=(m,)
+    alpha2: np.ndarray, shape=(m,)
+    deriv: boolean
+            True if return pairwise coulomb energies and forces. False only returns energies.
+    threshold: float
+            threshold for distance. Use compute_pairwise_coulomb_limit when smaller than threshold.
+    r_cut: float/int
+            cutoff radius in Angstrom for tapering function. Defualt is None (don't use tapering).
+            In Itai's water model cuttoff is set to 10 angstrom.
+
+    Returns
+    -------
+    value: np.ndarray, shape=(n,m)
+            pairwise coulomb energy in eV
+
+    """
+    i=0
+    j=0
+    value=[0]*len(coord2)
+    while i < len(coord2):
+
+        j=0
+        while j < len(coord1):
+            dist=math.sqrt((coord2[i][0]-coord1[j][0])**2.0 + (coord2[i][1]-coord1[j][1])**2.0 + (coord2[i][2]-coord1[j][2])**2.0)
+            #dist = cdist(coord1[i], coord2[j])
+            #mask = np.where(dist < threshold)            
+            erf_=erf(math.sqrt( (alpha1[j]*alpha2[i]) / (alpha1[j] + alpha2[i])) * dist)
+            value[i]+=14.4*charge1[j]*charge2[i]*erf_/dist
+            #print(charge1[j]*charge2[i]*erf_/dist)
+            #if r_cut is not None:
+            #    if(dist < r_cut):
+            #        erf_=erf(math.sqrt( (alpha1[j]*alpha2[i]) / (alpha1[j] + alpha2[i]) ) * dist)
+                    #print("dist=%.4f erf=%.4f tap=%.4f r_cut=%.4f\n" % (dist,erf_,tap_ij(dist, r_cut),r_cut))
+            #        value[i]+=14.4*(erf_ * tap_ij(dist, r_cut))
+            #else:
+                #print("dist=%.4f erf=%.4f \n" % (dist,erf_))
+            #    erf_=erf(math.sqrt( (alpha1[j]*alpha2[i]) / (alpha1[j] + alpha2[i])) * dist)
+            #    value[i]+=14.4*erf_
+            
+            j+=1
+        i+=1
+    
+    #print(23.060549*value*14.4)
+    return value
 
 def compute_pairwise_coulomb_force(
     coord1, charge1, alpha1, coord2, charge2, alpha2, threshold=1.0e-8, r_cut=None
@@ -1315,4 +1382,17 @@ def d_tap(r, r_cut):
         - 140 * (r ** 3) / (r_cut ** 4)
     )
     result[mask] = 0
+    return result
+
+def tap_ij(r, r_cut):
+    """
+    Tappering function used to modulate the lengthsclae over which the interation is operative.
+    This tapering function comes from Itai's paper(#TODO ref link),
+    which adopts a tapering fucntion of the form used in ReaxFF.
+    r,r_cut are np.ndarray of same shape
+    """
+    
+    ratio = r / r_cut
+    result = 20 * ratio ** 7 - 70 * ratio ** 6 + 84 * ratio ** 5 - 35 * ratio ** 4 + 1
+    
     return result

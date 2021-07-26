@@ -729,7 +729,45 @@ class CGem(object):
         value += shell_value
 
         return 14.4 * np.sum(value, axis=0)
+    
+    def compute_electrostatic_potential_gaussian_charge_ij(self, points,r_cut=None):
+        """Compute electrostatic potential of the cores & shells at the given points using gaussian charges.
 
+        Parameters
+        ----------
+        points : np.ndarray, shape=(k, 3)
+            Cartesian coordinates of points in Angstrom.
+
+        Returns
+        -------
+        np.ndarray, shape=(k,)
+            Electrostatic potential at the points in eV.
+
+        """
+        if points.ndim != self.coords_c.ndim:
+            raise ValueError(
+                f"Argument points should have {self.coords_c.ndim} dimentions!"
+            )
+        charge = np.ones(len(points))
+        alphas = np.repeat(1569.7579613660428, len(points))
+        # electrostatic potential of cores
+        value = compute_pairwise_coulomb_ij(
+            self.coords_c, self.charge_c, self.alpha_c, points, charge, alphas,r_cut=r_cut
+            #self.coords_c, self.charge_c, self.alpha_c, points, charge, self.alpha_c,r_cut=r_cut
+        )
+        value=np.array(value)
+        #print(value)
+        #sys.exit()
+        # electrostatic potential of shells
+        shell_value = compute_pairwise_coulomb_ij(
+            self.coords_s, self.charge_s, self.alpha_s, points, charge, alphas,r_cut=r_cut
+        )
+        shell_value=np.array(shell_value)
+        value += shell_value
+        
+        
+        return value
+    
     def compute_electrostatic_potential(self, points):
         """Compute electrostatic potential of the cores & shells at the given points using point charges.
 

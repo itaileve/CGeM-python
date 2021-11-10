@@ -12,8 +12,7 @@ from scipy.spatial.distance import cdist
 
 #
 # __all__ = ["load_lammpstrj_esp", "compute_stats", "load_lammpstrj_xyz","load_xyz", "compute_esp_point_charge",
-#            "write_ESPGrid","generate_ESPGrid"]
-
+#            "write_ESPGrid","generate_ESPGrid"
 
 def load_lammpstrj_esp(fname):
     # print("Loading ", fname)
@@ -498,19 +497,194 @@ def generate_vmd(cgem,xyz_file,eps_file,fname,save_dir,suffix="",ini_coords=[], 
     eps_to_lammpstrj(diff_eps, points, f"{save_dir}/{fname}{suffix}_diff.lammpstrj")
 
 
-def Load_pdb(file_name):
+def load_pdb(file_name):
     pdb_file = open(file_name,'r')
-    type=[]
+
+    #sym2num_={'H':1,'HA':1,'HT1':1,'HT2':1,'HB3':1,'HB':1,'HD21':1,'HD22':1,'HD23':1,'HG13':1,'HH2':1,'HG12':1,'HG21':1,'HB1':1,'HXT':1,'H1':1,'HG22':1,'1HD2':1,'2HD2':1,'HG':1,'HZ':1,'HH':1,'HG1':1,'HE1':1,'HE':1,'1HH1':1,'2HH1':1,'1HH2':1,'2HH2':1,'HE3':1,'HD1':1,'HZ2':1,'HZ3':1,'HG23':1,'HD11':1,'HD12':1,'HD13':1,'HB2':1,'HG3':1,'HG11':1,'HG2':1,'HD2':1,'HD3':1,'HN':1,'HZ1':1,'HE2':1,'HA3':1,'HA2':1,'1HE2':1,'2HE2':1,'NE2':7,'NE1':7,'NE':7,'N':7,'NZ':7,'NH1':7,'NH2':7,'ND1':7,'ND2':7,'C':6,'CD1':6,'CE':6,'CD2':6,'CB':6,'CG':6,'CG1':6,'CZ2':6,'CZ3':6,'CZ':6,'CH2':6,'CG2':6,'CE2':6,'CE3':6,'CE1':6,'CD':6,'OE2':8,'O':8,'O1':8,'OH':8,'OG1':8,'OXT':8,'OG':8,'OD1':8,'OD2':8,'OE1':8,'SD':16,'SG':16,'CL':17,'Cl':17,'CA':20,'Ca':20}
+
+    
+    sym2num_={'H':1,'HD':1,'N':7,'N1+':7,'N1-':7,'NA':7,'C':6,'A':6,'O':8,'OA':8,'O1-':8,'F':9,'P':15,'S':16,'S1-':16,'SA':16,'SD':16,'SG':16,'CL':17,'CA':20,'Zn2+':30,'Cu2+':29,'Fe2+':26,'Mg2+':12,'Co2+':27,'Ni2+':28}
+        
+    type_=[]
     type_pdb=[]
     amacid_type=[]
     atom_coords=[]
+    num=[]
+    value=["0"]*12
+    print("load pdb")
     for line in pdb_file:
-        value = line.split()
         #print(value[0])
-        if(len(value) > 2):
-            type_pdb.append(value[2])
-            type.append(value[2][0])
-            amacid_type.append(value[3])
-            atom_coords.append([float(value[6]),float(value[7]),float(value[8])])
+        #value = line.split()
+        value[0] = line[0:6].strip()           
+        if(value[0] == "ATOM" or value[0][0:6] == "HETATM"):
+
+            value[1] = line[6:11].strip()
+            value[2] = line[11:15].strip()
+            value[3] = line[15:20].strip()
+            value[4] = line[20:22].strip()
+            value[5] = line[22:27].strip()
+            value[6] = line[27:38].strip()
+            value[7] = line[38:46].strip()
+            value[8] = line[46:54].strip()
+            value[9] = line[46:60].strip()
+            value[10] = line[60:66].strip()
+            value[11] = line[74:80].strip()
+
+            #print(value)
+            if(len(value) == 12):
+                type_pdb.append(value[2])
+                type_.append(value[2][0])
+                amacid_type.append(value[3])
+                atom_coords.append([float(value[6]),float(value[7]),float(value[8])])
+                
+                #print(value[11],sym2num_[value[11]])
+                
+                num.append(sym2num_[value[11]])
+            if(len(value) == 11):
+                type_pdb.append(value[2])
+                type_.append(value[2][0])
+                amacid_type.append(value[3])
+                atom_coords.append([float(value[5]),float(value[6]),float(value[7])])
+                
+                #print(value[10],sym2num_[value[10]])
+                
+                num.append(sym2num_[value[10]])
+    return num, np.array(type_), np.array(type_pdb), np.array(amacid_type), np.array(atom_coords)
+
+def load_lig_pdbqt(file_name):
+    
+    pdb_file = open(file_name,'r')
+
+    #sym2num_={'H':1,'HA':1,'HT1':1,'HT2':1,'HB3':1,'HB':1,'HD21':1,'HD22':1,'HD23':1,'HG13':1,'HH2':1,'1H16':1,'HG12':1,'HG21':1,'HB1':1,'HXT':1,'H1':1,'HG22':1,'1HD2':1,'2HD2':1,'HG':1,'HZ':1,'HH':1,'HG1':1,'HE1':1,'HE':1,'1HH1':1,'2HH1':1,'1HH2':1,'2HH2':1,'HE3':1,'HD1':1,'HZ2':1,'HZ3':1,'HG23':1,'HD11':1,'HD12':1,'HD13':1,'HB2':1,'HG3':1,'HG11':1,'HG2':1,'HD2':1,'HD3':1,'HN':1,'HZ1':1,'HE2':1,'HA3':1,'HA2':1,'1HE2':1,'2HE2':1,'NE2':7,'NE1':7,'NE':7,'N':7,'NZ':7,'NH1':7,'NH2':7,'ND1':7,'ND2':7,'C':6,'CD1':6,'C16':6,'CE':6,'CD2':6,'CB':6,'CG':6,'CG1':6,'CZ2':6,'CZ3':6,'CZ':6,'CH2':6,'CG2':6,'CE2':6,'CE3':6,'CE1':6,'CD':6,'OE2':8,'O':8,'O1':8,'OH':8,'OG1':8,'OXT':8,'OG':8,'OD1':8,'OD2':8,'OE1':8,'SD':16,'SG':16,'CL':17,'Cl':17,'CA':20,'Ca':20}
+
+    sym2num_={'H':1,'HD':1,'N':7,'N1+':7,'NA':7,'C':6,'A':6,'O':8,'OA':8,'O1-':8,'F':9,'P':15,'S':16,'S1-':16,'SA':16,'SD':16,'SG':16,'CL':17,'CA':20}
+    
+    type_=[]
+    type_pdb=[]
+    amacid_type=[]
+    atom_coords=[]
+    num=[]
+    value=["0"]*12
+    for line in pdb_file:
+        value[0] = line[0:6].strip()           
         
-    return type, type_pdb, amacid_type, atom_coords
+        #print(value[0])
+        if(value[0] == "ATOM" or value[0] == "HETATM"):
+            
+            value[1] = line[6:11].strip()
+            value[2] = line[11:15].strip()
+            value[3] = line[15:20].strip()
+           # value[4] = line[20:22].strip()
+            value[4] = line[22:27].strip()
+            value[5] = line[27:38].strip()
+            value[6] = line[38:46].strip()
+            value[7] = line[46:54].strip()
+            value[8] = line[54:60].strip()
+            value[9] = line[60:66].strip()
+            value[10] = line[66:76].strip()
+            value[11] = line[76:80].strip()
+            
+
+            type_pdb.append(value[2])
+            type_.append(value[2][0])
+            amacid_type.append(value[3])
+            atom_coords.append([float(value[5]),float(value[6]),float(value[7])])
+
+            #print(value[11])
+            #print(value[11],sym2num_[value[11]])
+
+            num.append(sym2num_[value[11]])
+            
+    return num, np.array(type_), np.array(type_pdb), np.array(amacid_type), np.array(atom_coords)
+
+
+def Write_rec_PDBQT(atoms_c,nums_c,coords_c,coords_s,fname,filename,charges_c):
+#    assert len(atoms_1) == len(coords_1)
+#    assert len(atoms_2) == len(coords_2)
+    s_count=0
+    c_count=0
+    pdb_file = open(filename,'r')
+    line_count=1
+    value=["0"]*13
+    with open(fname, "w") as f:
+
+        for line in pdb_file:
+            value_ = line.split()
+            #print(value[0])
+            if(len(value_) > 7):
+                
+                value[0] = line[0:6].strip()           
+                value[1] = line[6:11].strip()
+                value[2] = line[11:16].strip()
+                value[3] = line[16:20].strip()
+                value[4] = line[20:22].strip()
+                value[5] = line[22:27].strip()
+                value[6] = line[27:38].strip()
+                value[7] = line[38:46].strip()
+                value[8] = line[46:54].strip()
+                value[9] = line[46:60].strip()
+                value[10] = line[60:66].strip()
+                value[11] = line[66:76].strip()
+                value[12] = line[76:80].strip()
+                #print(value)
+                
+                if(len(value[2]) < 4):
+                    f.write("{0} {1:>6} {13} {2:<3} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9.2f} {12:<3}\n".format("ATOM",line_count,value[2],value[3],value[4],value[5],coords_c[c_count][0],coords_c[c_count][1],coords_c[c_count][2],"0.00","0.00",charges_c[c_count],value[12],""))
+                else:
+                    f.write("{0} {1:>6} {2:^4} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9.2f} {12:<3}\n".format("ATOM",line_count,value[2],value[3],value[4],value[5],coords_c[c_count][0],coords_c[c_count][1],coords_c[c_count][2],"0.00","0.00",charges_c[c_count],value[12]))
+                line_count+=1
+                c_count+=1
+                #f.write("{0} {1:>6} {2:^4} {3:<3} {4} {5:>3} {6:>10.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:^3}\n".format("ATOM",line_count,value[2],value[3],value[4],value[5],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC"))
+                if(len(value[2]) < 4):
+                    f.write("{0} {1:>6} {13} {2:<3} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:<3}\n".format("ATOM",line_count,value[2],value[3],value[4],value[5],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC",""))
+                else:
+                    f.write("{0} {1:>6} {2:^4} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:<3}\n".format("ATOM",line_count,value[2],value[3],value[4],value[5],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC"))
+                line_count+=1
+                s_count+=1
+                if (atoms_c[c_count-1]==820): # additional shell for -1 Oxygen
+                    if(len(value[2]) < 4):
+                        f.write("{0} {1:>6} {13} {2:<3} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:<3}\n".format("ATOM",line_count,value[2],value[3],value[4],value[5],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC",""))
+                    else:
+                        f.write("{0} {1:>6} {2:^4} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:<3}\n".format("ATOM",line_count,value[2],value[3],value[4],value[5],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC"))
+                    line_count+=1
+                    s_count+=1
+
+
+def Write_lig_PDBQT(atoms_c,nums_c,coords_c,coords_s,fname,filename,charges_c):
+#    assert len(atoms_1) == len(coords_1)
+#    assert len(atoms_2) == len(coords_2)
+    s_count=0
+    c_count=0
+    pdb_file = open(filename,'r')
+    line_count=1
+    with open(fname, "w") as f:
+
+        for line in pdb_file:
+            value = line.split()
+            #print(value[0])
+            if (value[0]=="REMARK" or value[0]=="ROOT" or value[0]=="BRANCH" or value[0]=="ENDROOT" or value[0]=="ENDBRANCH" or value[0]=="TORSDOF"):
+                f.write(line)
+            if(value[0]=="HETATM"):
+                #print(len(value),c_count)
+                #print(line)
+                if(len(value[2]) < 4):
+                    f.write("{0} {1:>4} {13} {2:<3} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9.2f} {12:<3}\n".format("HETATM",line_count,value[2],value[3]," ",value[4],coords_c[c_count][0],coords_c[c_count][1],coords_c[c_count][2],"0.00","0.00",charges_c[c_count],value[11],""))
+                else:
+                    f.write("{0} {1:>4} {2:^4} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9.2f} {12:<3}\n".format("HETATM",line_count,value[2],value[3]," ",value[4],coords_c[c_count][0],coords_c[c_count][1],coords_c[c_count][2],"0.00","0.00",charges_c[c_count],value[11]))
+                line_count+=1
+                c_count+=1
+                #f.write("{0} {1:>6} {2:^4} {3:<3} {4} {5:>3} {6:>10.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:^3}\n".format("ATOM",line_count,value[2],value[3],value[4],value[5],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC"))
+                if(len(value[2]) < 4):
+                    f.write("{0} {1:>4} {13} {2:<3} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:<3}\n".format("HETATM",line_count,value[2],value[3]," ",value[4],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC",""))
+                else:
+                    f.write("{0} {1:>4} {2:^4} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:<3}\n".format("HETATM",line_count,value[2],value[3]," ",value[4],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC"))
+                line_count+=1
+                s_count+=1
+                if (atoms_c[c_count-1]==820): # additional shell for -1 Oxygen
+                    if(len(value[2]) < 4):
+                        f.write("{0} {1:>4} {13} {2:<3} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:<3}\n".format("HETATM",line_count,value[2],value[3]," ",value[4],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC",""))
+                    else:
+                        f.write("{0} {1:>4} {2:^4} {3:<3} {4} {5:>3} {6:>11.3f} {7:>7.3f} {8:>7.3f} {9:>5} {10:>5} {11:>9} {12:<3}\n".format("HETATM",line_count,value[2],value[3]," ",value[4],coords_s[s_count][0],coords_s[s_count][1],coords_s[s_count][2],"0.00","0.00","-1.00","OC"))
+                    line_count+=1
+                    s_count+=1
+
